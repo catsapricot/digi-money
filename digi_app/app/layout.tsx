@@ -1,6 +1,6 @@
 // app/layout.tsx
-import Sidebar from "@/components/sidebar";
-import Header from "@/components/header";
+import Sidebar from "@/components/sidebar-keuangan";
+import Header from "@/components/header-keuangan";
 import "./globals.css"; 
 
 export default function DashboardLayout({
@@ -15,11 +15,13 @@ export default function DashboardLayout({
           
           {/* Sidebar Keuangan */}
           {/* <Sidebar /> */}
+        
 
           {/* Sisi Kanan: Header + Konten Halaman Aktif */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* <Header /> */}
             
+
             {/* Tempat Masuknya isi dari page.tsx */}
             <div className="flex-col flex overflow-hidden w-full mx-auto">
               {children}
