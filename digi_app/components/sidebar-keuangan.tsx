@@ -26,7 +26,7 @@ export default function Sidebar() {
         <nav className="space-y-1.5">
           {/* Menu: Beranda Keuangan (Inaktif) */}
           <Link 
-            href="/" 
+            href="/keuangan" 
             className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-800 hover:bg-stone-200/40 transition"
           >
             <LayoutDashboard size={20} className="text-stone-700 stroke-[1.75]" />
@@ -35,7 +35,7 @@ export default function Sidebar() {
           
           {/* Menu: Pencairan (Aktif - Putih Bersih dengan Badge Hijau Tua) */}
           <Link 
-            href="/pencairan" 
+            href="/keuangan/pencairan" 
             className="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-semibold bg-white text-stone-900 shadow-sm border border-stone-200/30"
           >
             <div className="flex items-center gap-3.5">
@@ -49,7 +49,7 @@ export default function Sidebar() {
           
           {/* Menu: Jurnal Akuntansi (Inaktif) */}
           <Link 
-            href="/jurnal" 
+            href="/keuangan/jurnal" 
             className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-800 hover:bg-stone-200/40 transition"
           >
             <BookOpen size={20} className="text-stone-700 stroke-[1.75]" />
@@ -58,7 +58,7 @@ export default function Sidebar() {
           
           {/* Menu: Chart of Accounts (Inaktif) */}
           <Link 
-            href="/coa" 
+            href="/keuangan/coa" 
             className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-800 hover:bg-stone-200/40 transition"
           >
             <Settings size={20} className="text-stone-700 stroke-[1.75]" />
@@ -67,7 +67,7 @@ export default function Sidebar() {
           
           {/* Menu: Laporan Keuangan (Inaktif) */}
           <Link 
-            href="/laporan" 
+            href="/keuangan/laporan" 
             className="flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium text-stone-800 hover:bg-stone-200/40 transition"
           >
             <BarChart3 size={20} className="text-stone-700 stroke-[1.75]" />
