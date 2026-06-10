@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, ArrowRight, FileText, Loader2 } from "lucide-react";
-import Sidebar from "@/components/sidebar-karyawan";
-import Header from "@/components/header-karyawan";
+import Sidebar from "@/components/sidebar";
+import Header from "@/components/header";
 
 // Tipe Data untuk State Frontend
 type DashboardData = {
@@ -24,8 +24,10 @@ type DashboardData = {
   }>;
 };
 
+type StatusBadge = { text: string; className: string };
+
 // Helper warna badge berdasarkan status backend
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string): StatusBadge => {
   switch (status) {
     case "SUBMITTED":
       return { text: "Menunggu PM", className: "bg-[#fdf3e6] text-[#b46b2b]" };
@@ -69,12 +71,13 @@ export default function BerandaKaryawanPage() {
     async function fetchDashboardData() {
       try {
         setLoading(true);
-        const response = await fetch("/api/dashboard", {
-          method: "GET",
-        });
+        setError(null);
+
+        const response = await fetch("/api/dashboard", { method: "GET" });
 
         if (!response.ok) {
-          throw new Error("Gagal mengambil data dari server");
+          const msg = await response.json().catch(() => null);
+          throw new Error(msg?.message || "Gagal mengambil data dari server");
         }
 
         const result = await response.json();
@@ -89,9 +92,15 @@ export default function BerandaKaryawanPage() {
     fetchDashboardData();
   }, []);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen w-full bg-[#f9f8f4] font-sans text-stone-800">
-      <Sidebar />
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        userRole="Karyawan"
+      />
 
       {/* Area Konten Kanan */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -106,6 +115,7 @@ export default function BerandaKaryawanPage() {
                 Pantau status pengajuan reimbursement-mu dan ajukan klaim baru dalam hitungan detik.
               </p>
             </div>
+
             <button className="flex items-center gap-2 px-5 py-2.5 bg-[#2d6a4f] hover:bg-[#245c43] text-white text-[13px] font-semibold rounded-full shadow-sm transition-colors duration-200">
               <Plus size={15} />
               Ajukan Reimbursement
@@ -165,9 +175,7 @@ export default function BerandaKaryawanPage() {
                       <FileText size={16} className="text-[#117a5b]" />
                     </div>
                   </div>
-                  <p className="text-[32px] font-bold text-stone-900 leading-none mb-2">
-                    {data.summary.approvedCount}
-                  </p>
+                  <p className="text-[32px] font-bold text-stone-900 leading-none mb-2">{data.summary.approvedCount}</p>
                   <p className="text-[12px] text-stone-400">pengajuan berhasil dicairkan</p>
                 </div>
               </div>
@@ -191,7 +199,6 @@ export default function BerandaKaryawanPage() {
                   ) : (
                     data.recentSubmissions.map((item) => {
                       const badge = getStatusBadge(item.status);
-                      // Ambil merchant nama dari ocrData, jika kosong ambil dari pos anggaran / proyek / fallback
                       const merchantName =
                         item.ocrData?.merchantName ||
                         item.ocrData?.merchant ||
@@ -203,26 +210,19 @@ export default function BerandaKaryawanPage() {
                           key={item.id}
                           className="flex items-center gap-4 px-6 py-4 hover:bg-stone-50 transition-colors"
                         >
-                          {/* Ikon dokumen */}
                           <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl bg-[#f5f4ef] border border-stone-200">
                             <FileText size={16} className="text-stone-500" />
                           </div>
 
-                          {/* Info utama */}
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-bold text-stone-800 truncate">
-                              {merchantName}
-                            </p>
+                            <p className="text-[13px] font-bold text-stone-800 truncate">{merchantName}</p>
                             <p className="text-[12px] text-stone-400 mt-0.5 truncate">
                               RB-{item.id} · {item.proyek?.nama || "Tanpa Proyek"}
                             </p>
                           </div>
 
-                          {/* Nominal + Badge */}
                           <div className="flex items-center gap-3 flex-shrink-0">
-                            <p className="text-[14px] font-bold text-stone-800">
-                              {formatRupiah(Number(item.nominal))}
-                            </p>
+                            <p className="text-[14px] font-bold text-stone-800">{formatRupiah(Number(item.nominal))}</p>
                             <span
                               className={`px-3 py-1 rounded-full text-[11px] font-bold ${badge.className}`}
                             >

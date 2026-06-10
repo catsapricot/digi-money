@@ -70,20 +70,21 @@ async function verifyJWT(token: string, secret: string): Promise<any | null> {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
   // 1. Exclude public static files, images, login pages, and register page
-if (
-  pathname.startsWith('/_next') ||
-  pathname === '/api/auth/login' ||    // Hanya bebaskan endpoint login
-  pathname === '/api/auth/register' || // Hanya bebaskan endpoint register
-  pathname === '/login' ||
-  pathname === '/register' ||
-  pathname === '/api-docs' ||
-  pathname === '/api/openapi.json' ||
-  pathname.includes('.')
-) {
-  return NextResponse.next();
-}
+  if (
+    pathname.startsWith('/_next') ||
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/register' ||
+    pathname === '/api/auth/logout' ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/api-docs' ||
+    pathname === '/api/openapi.json' ||
+    pathname.includes('.') // static assets e.g. /favicon.ico, /bukti_struk.png
+  ) {
+    return NextResponse.next();
+  }
+
 
   // 2. Get auth token
   let token = req.cookies.get('auth_token')?.value;
@@ -169,14 +170,10 @@ if (
   // Valid session, store parsed payload headers for upstream API handlers
 // Valid session, store parsed payload headers for upstream API handlers
   const requestHeaders = new Headers(req.headers);
-  
-  // Ubah payload.id menjadi string
   requestHeaders.set('x-user-id', String(payload.id));
-  requestHeaders.set('x-user-email', payload.email);
-  requestHeaders.set('x-user-role', payload.role);
-  
-  // Ubah payload.proyekId menjadi string jika ada
-  if (payload.proyekId) {
+  requestHeaders.set('x-user-email', String(payload.email));
+  requestHeaders.set('x-user-role', String(payload.role));
+  if (payload.proyekId !== undefined && payload.proyekId !== null) {
     requestHeaders.set('x-user-proyek-id', String(payload.proyekId));
   }
 

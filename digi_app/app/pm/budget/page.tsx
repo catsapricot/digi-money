@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import SidebarPM from '../../../components/sidebar-pm';
-import HeaderPM from '../../../components/header-pm';
+import Sidebar from '@/components/sidebar';
+import Header from '@/components/header';
+
 import { 
   Plus, 
   AlertCircle,
@@ -126,7 +127,7 @@ export default function BudgetProyek() {
 
     return {
       dbId: r.id,
-      id: r.id.substring(0, 8).toUpperCase(),
+      id: String(r.id).substring(0, 8).toUpperCase(),
       pemohon: r.user?.nama || 'Karyawan',
       initials,
       merchant: r.ocrData?.merchant || 'N/A',
@@ -169,13 +170,14 @@ export default function BudgetProyek() {
   return (
     <div className="min-h-screen bg-background flex text-slate-800 font-sans">
 
-      <SidebarPM 
+      <Sidebar
         isSidebarOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+        onClose={() => setIsSidebarOpen(false)}
+        userRole="Project Manager"
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
-        <HeaderPM 
+        <Header
           onOpenSidebar={() => setIsSidebarOpen(true)} 
         />
 
@@ -183,7 +185,7 @@ export default function BudgetProyek() {
           
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
             <div className="space-y-1.5">
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              <h1 className="text-2xl font-bold text-stone-900">
                 Budget Proyek
               </h1>
               <p className="text-sm font-medium text-slate-500 flex items-center flex-wrap gap-x-1.5">
@@ -325,7 +327,7 @@ export default function BudgetProyek() {
                           <div>
                             <span className="font-bold text-slate-800">{pos.name}</span>
                             <span className="ml-1.5 text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-                              {pos.id.substring(0, 8).toUpperCase()}
+                              {String(pos.id).substring(0, 8).toUpperCase()}
                             </span>
                           </div>
                           <div className="text-slate-500 font-mono">
