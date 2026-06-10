@@ -10,6 +10,19 @@ const generateRandomFilename = (originalName: string) => {
   return `${Date.now()}-${randomStr}${ext}`;
 };
 
+// Helper to map DB fields to client fields
+const mapReimbursement = (r: any) => {
+  if (!r) return null;
+  return {
+    ...r,
+    strukUrl: r.urlStruk,
+    posAnggaran: r.posAnggaran ? {
+      ...r.posAnggaran,
+      deskripsi: r.posAnggaran.namaPos,
+    } : null,
+  };
+};
+
 // GET: Fetch reimbursement lists based on user role
 export async function GET(req: NextRequest) {
   try {
@@ -25,11 +38,11 @@ export async function GET(req: NextRequest) {
 
     if (role === 'Karyawan') {
       // Employees only see their own submissions
-      filter.userId = userId;
+      filter.userId = parseInt(userId, 10);
     } else if (role === 'Project Manager') {
       // PMs see submissions belonging to their assigned project
       if (userProyekId) {
-        filter.proyekId = userProyekId;
+        filter.proyekId = parseInt(userProyekId, 10);
       } else {
         // If PM is not assigned to a project, they see nothing or their own
         return NextResponse.json({ reimbursements: [] });
@@ -63,7 +76,7 @@ export async function GET(req: NextRequest) {
       orderBy: { id: 'desc' },
     });
 
-    return NextResponse.json({ reimbursements });
+    return NextResponse.json({ reimbursements: reimbursements.map(mapReimbursement) });
   } catch (error: any) {
     console.error('Fetch reimbursements error:', error);
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });
@@ -134,37 +147,38 @@ export async function POST(req: NextRequest) {
 
     // Verify project and budget category existence
     const pos = await prisma.posAnggaran.findUnique({
-      where: { id: posAnggaranId },
+      where: { id: parseInt(posAnggaranId, 10) },
       include: {
         budget: true,
       },
     });
 
-    if (!pos || pos.budget.proyekId !== proyekId) {
+    if (!pos || pos.budget.proyekId !== parseInt(proyekId, 10)) {
       return NextResponse.json({ message: 'Invalid Pos Anggaran or Proyek match' }, { status: 400 });
     }
 
     // Create Reimbursement record in SUBMITTED state
     const reimbursement = await prisma.reimbursement.create({
       data: {
-        userId,
-        proyekId,
-        posAnggaranId,
+        userId: parseInt(userId, 10),
+        proyekId: parseInt(proyekId, 10),
+        posAnggaranId: parseInt(posAnggaranId, 10),
         nominal,
-        strukUrl,
+        urlStruk: strukUrl,
         ocrData,
         status: 'SUBMITTED',
       },
       include: {
         user: { select: { nama: true } },
         proyek: { select: { nama: true } },
+        posAnggaran: true,
       },
     });
 
     // Create Audit Trail
     await prisma.auditTrail.create({
       data: {
-        userId,
+        userId: parseInt(userId, 10),
         aksi: 'submit_reimbursement',
         detail: `Mengajukan reimbursement Rp ${nominal.toLocaleString()} untuk proyek ${reimbursement.proyek.nama}`,
       },
@@ -173,8 +187,12 @@ export async function POST(req: NextRequest) {
     // Create notification for the Project Manager of the project (if any)
     const pmUsers = await prisma.user.findMany({
       where: {
-        proyekId,
         role: 'Project Manager',
+        proyek: {
+          some: {
+            proyekId: parseInt(proyekId, 10),
+          },
+        },
       },
     });
 
@@ -190,7 +208,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Reimbursement submitted successfully', 
-      reimbursement 
+      reimbursement: mapReimbursement(reimbursement) 
     }, { status: 201 });
   } catch (error: any) {
     console.error('Submit reimbursement error:', error);

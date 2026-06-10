@@ -19,10 +19,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 });
     }
 
-    const isPasswordValid = await comparePassword(password, user.password);
+    const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 });
     }
+
+    // Get user's project association
+    const userProyek = await prisma.userProyek.findFirst({
+      where: { userId: user.id },
+    });
+    const userProyekId = userProyek ? userProyek.proyekId : null;
 
     // Sign JWT Token
     const token = signToken({
@@ -30,7 +36,7 @@ export async function POST(req: Request) {
       nama: user.nama,
       email: user.email,
       role: user.role,
-      proyekId: user.proyekId,
+      proyekId: userProyekId,
       divisi: user.divisi,
     });
 
@@ -44,13 +50,17 @@ export async function POST(req: Request) {
     });
 
     // Don't return password
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
+    const responseUser = {
+      ...userWithoutPassword,
+      proyekId: userProyekId,
+    };
 
     // Create Response
     const response = NextResponse.json({
       message: 'Login successful',
       token,
-      user: userWithoutPassword,
+      user: responseUser,
     });
 
     // Set token in Cookie (httpOnly, secure, lax, expires in 24h)

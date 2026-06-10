@@ -19,9 +19,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ message: "Action must be 'APPROVE' or 'REJECT'" }, { status: 400 });
     }
 
+    // Helper to map DB fields to client fields
+    const mapReimbursement = (r: any) => {
+      if (!r) return null;
+      return {
+        ...r,
+        strukUrl: r.urlStruk,
+        posAnggaran: r.posAnggaran ? {
+          ...r.posAnggaran,
+          deskripsi: r.posAnggaran.namaPos,
+        } : null,
+      };
+    };
+
     // 1. Fetch the reimbursement
     const reimbursement = await prisma.reimbursement.findUnique({
-      where: { id },
+      where: { id: parseInt(id, 10) },
       include: {
         user: { select: { nama: true, id: true } },
         proyek: { select: { nama: true, id: true } },
@@ -48,8 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         // Create approval record
         await tx.approval.create({
           data: {
-            reimbursementId: id,
-            approverId: userId,
+            reimbursementId: parseInt(id, 10),
+            approverId: parseInt(userId, 10),
             level: 'PM',
             status: nextStatus,
             catatan: catatan || null,
@@ -58,14 +71,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         // Update reimbursement status
         const rb = await tx.reimbursement.update({
-          where: { id },
+          where: { id: parseInt(id, 10) },
           data: { status: nextStatus },
         });
 
         // Audit Trail
         await tx.auditTrail.create({
           data: {
-            userId,
+            userId: parseInt(userId, 10),
             aksi: action === 'APPROVE' ? 'approve_pm' : 'reject_pm',
             detail: `PM ${actionText} pengajuan reimbursement Rp ${nominal.toLocaleString()} oleh ${reimbursement.user.nama}`,
           },
@@ -99,7 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return rb;
       });
 
-      return NextResponse.json({ message: `PM successfully processed approval: ${nextStatus}`, reimbursement: updated });
+      return NextResponse.json({ message: `PM successfully processed approval: ${nextStatus}`, reimbursement: mapReimbursement(updated) });
     }
 
     // 3. Handle Tim Keuangan level approval (Final Disbursement)
@@ -114,9 +127,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           return NextResponse.json({ message: 'noAkunDebit and noAkunKredit are required for disbursement journal' }, { status: 400 });
         }
 
-        // Verify Chart of accounts exist
-        const deb = await prisma.chartOfAccounts.findUnique({ where: { nomorAkun: noAkunDebit } });
-        const kre = await prisma.chartOfAccounts.findUnique({ where: { nomorAkun: noAkunKredit } });
+        // Verify Chart of accounts exist by mapping account number
+        const deb = await prisma.chartOfAccounts.findFirst({ where: { nomorAkun: parseInt(noAkunDebit, 10) } });
+        const kre = await prisma.chartOfAccounts.findFirst({ where: { nomorAkun: parseInt(noAkunKredit, 10) } });
 
         if (!deb || !kre) {
           return NextResponse.json({ message: 'Invalid debit or credit account number' }, { status: 400 });
@@ -135,10 +148,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           const rabTotal = Number(budget.rabTotal);
           const prevSisa = Number(budget.sisaBudget);
           
-          if (prevSisa < nominal) {
-            // Wait, we can allow overdraft but let's throw warning or deduct anyway. Let's deduct anyway but send warning. Actually, budget deduction logic:
-          }
-
           const newSisa = prevSisa - nominal;
           const newPengeluaran = Number(budget.totalPengeluaran) + nominal;
           const newReimbursementVal = Number(budget.totalReimbursement) + nominal;
@@ -164,19 +173,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           // D. Generate Jurnal Akuntansi (Debit-Kredit)
           const journal = await tx.jurnalAkuntansi.create({
             data: {
-              reimbursementId: id,
-              noAkunDebit,
-              noAkunKredit,
+              reimbursementId: parseInt(id, 10),
+              noAkunDebit: deb.id,
+              noAkunKredit: kre.id,
               nominal,
-              keterangan: `Pencairan reimbursement ${id} - ${reimbursement.user.nama} untuk ${reimbursement.posAnggaran.deskripsi}`,
+              keterangan: `Pencairan reimbursement ${id} - ${reimbursement.user.nama} untuk ${reimbursement.posAnggaran.namaPos}`,
             },
           });
 
           // E. Record Approval
           await tx.approval.create({
             data: {
-              reimbursementId: id,
-              approverId: userId,
+              reimbursementId: parseInt(id, 10),
+              approverId: parseInt(userId, 10),
               level: 'KEUANGAN',
               status: 'APPROVED',
               catatan: catatan || null,
@@ -185,14 +194,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
           // F. Update status to APPROVED
           const rb = await tx.reimbursement.update({
-            where: { id },
+            where: { id: parseInt(id, 10) },
             data: { status: 'APPROVED' },
           });
 
           // G. Audit Trail
           await tx.auditTrail.create({
             data: {
-              userId,
+              userId: parseInt(userId, 10),
               aksi: 'approve_keuangan',
               detail: `Pencairan reimbursement Rp ${nominal.toLocaleString()} oleh ${reimbursement.user.nama}. Jurnal Debit: ${noAkunDebit}, Kredit: ${noAkunKredit}`,
             },
@@ -219,7 +228,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               
               // 1. Notify PM of the project
               const pmUsers = await tx.user.findMany({
-                where: { proyekId: reimbursement.proyekId, role: 'Project Manager' },
+                where: {
+                  role: 'Project Manager',
+                  proyek: {
+                    some: {
+                      proyekId: reimbursement.proyekId,
+                    },
+                  },
+                },
               });
               for (const pm of pmUsers) {
                 await tx.notification.create({
@@ -252,7 +268,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         return NextResponse.json({ 
           message: 'Reimbursement successfully disbursed and journal entries generated.', 
-          reimbursement: result.rb,
+          reimbursement: mapReimbursement(result.rb),
           journal: result.journal 
         });
       } else {
@@ -260,8 +276,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         const updated = await prisma.$transaction(async (tx) => {
           await tx.approval.create({
             data: {
-              reimbursementId: id,
-              approverId: userId,
+              reimbursementId: parseInt(id, 10),
+              approverId: parseInt(userId, 10),
               level: 'KEUANGAN',
               status: 'REJECTED',
               catatan: catatan || null,
@@ -269,13 +285,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           });
 
           const rb = await tx.reimbursement.update({
-            where: { id },
+            where: { id: parseInt(id, 10) },
             data: { status: 'REJECTED' },
           });
 
           await tx.auditTrail.create({
             data: {
-              userId,
+              userId: parseInt(userId, 10),
               aksi: 'reject_keuangan',
               detail: `Keuangan menolak pengajuan reimbursement Rp ${nominal.toLocaleString()} oleh ${reimbursement.user.nama}`,
             },
@@ -292,7 +308,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           return rb;
         });
 
-        return NextResponse.json({ message: 'Reimbursement successfully rejected by Keuangan.', reimbursement: updated });
+        return NextResponse.json({ message: 'Reimbursement successfully rejected by Keuangan.', reimbursement: mapReimbursement(updated) });
       }
     }
 

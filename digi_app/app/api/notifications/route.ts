@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     }
 
     const notifications = await prisma.notification.findMany({
-      where: { userId },
+      where: { userId: parseInt(userId, 10) },
       orderBy: { timestamp: 'desc' },
     });
 
@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest) {
 
     if (id) {
       const existing = await prisma.notification.findFirst({
-        where: { id, userId },
+        where: { id: parseInt(id, 10), userId: parseInt(userId, 10) },
       });
 
       if (!existing) {
@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest) {
       }
 
       const updated = await prisma.notification.update({
-        where: { id },
+        where: { id: parseInt(id, 10) },
         data: { dibaca: true },
       });
 
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest) {
     } else {
       // Mark all as read for this user
       await prisma.notification.updateMany({
-        where: { userId, dibaca: false },
+        where: { userId: parseInt(userId, 10), dibaca: false },
         data: { dibaca: true },
       });
 

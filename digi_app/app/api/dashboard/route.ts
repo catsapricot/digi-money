@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (role === 'Karyawan') {
       // 1. Employee Dashboard data
       const userReimbursements = await prisma.reimbursement.findMany({
-        where: { userId },
+        where: { userId: parseInt(userId, 10) },
         select: {
           nominal: true,
           status: true,
@@ -31,11 +31,20 @@ export async function GET(req: NextRequest) {
       const totalRejected = userReimbursements.filter(r => r.status === 'REJECTED').length;
 
       const recentSubmissions = await prisma.reimbursement.findMany({
-        where: { userId },
-        include: { proyek: { select: { nama: true } }, posAnggaran: { select: { deskripsi: true } } },
+        where: { userId: parseInt(userId, 10) },
+        include: { proyek: { select: { nama: true } }, posAnggaran: { select: { namaPos: true } } },
         orderBy: { id: 'desc' },
         take: 5,
       });
+
+      const mappedRecent = recentSubmissions.map((r: any) => ({
+        ...r,
+        strukUrl: r.urlStruk,
+        posAnggaran: r.posAnggaran ? {
+          ...r.posAnggaran,
+          deskripsi: r.posAnggaran.namaPos,
+        } : null,
+      }));
 
       dashboardData.summary = {
         totalSubmissions: userReimbursements.length,
@@ -44,7 +53,7 @@ export async function GET(req: NextRequest) {
         approvedCount: totalApproved,
         rejectedCount: totalRejected,
       };
-      dashboardData.recentSubmissions = recentSubmissions;
+      dashboardData.recentSubmissions = mappedRecent;
 
     } else if (role === 'Project Manager') {
       // 2. Project Manager Dashboard data
@@ -53,7 +62,7 @@ export async function GET(req: NextRequest) {
         dashboardData.message = 'No project associated with this Project Manager';
       } else {
         const project = await prisma.proyek.findUnique({
-          where: { id: userProyekId },
+          where: { id: parseInt(userProyekId, 10) },
           include: {
             budget: {
               include: {
@@ -65,14 +74,14 @@ export async function GET(req: NextRequest) {
 
         const pendingApprovalsCount = await prisma.reimbursement.count({
           where: {
-            proyekId: userProyekId,
+            proyekId: parseInt(userProyekId, 10),
             status: 'SUBMITTED', // PM only approves SUBMITTED status
           },
         });
 
         const activeAlerts = await prisma.notification.findMany({
           where: {
-            userId,
+            userId: parseInt(userId, 10),
             tipe: 'alert',
             dibaca: false,
           },
@@ -80,7 +89,18 @@ export async function GET(req: NextRequest) {
           take: 3,
         });
 
-        dashboardData.project = project;
+        const mappedBudget = project?.budget ? {
+          ...project.budget,
+          posAnggaran: project.budget.posAnggaran.map((pos) => ({
+            ...pos,
+            deskripsi: pos.namaPos,
+          })),
+        } : null;
+
+        dashboardData.project = project ? {
+          ...project,
+          budget: mappedBudget,
+        } : null;
         dashboardData.pendingApprovalsCount = pendingApprovalsCount;
         dashboardData.alerts = activeAlerts;
       }

@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if account number already exists
-    const existing = await prisma.chartOfAccounts.findUnique({
-      where: { nomorAkun },
+    const existing = await prisma.chartOfAccounts.findFirst({
+      where: { nomorAkun: parseInt(nomorAkun, 10) },
     });
 
     if (existing) {
@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
 
     const newCoa = await prisma.chartOfAccounts.create({
       data: {
-        nomorAkun,
+        id: `COA-${nomorAkun}`,
+        nomorAkun: parseInt(nomorAkun, 10),
         namaAkun,
         tipe,
         standar,
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       await prisma.auditTrail.create({
         data: {
-          userId,
+          userId: parseInt(userId, 10),
           aksi: 'create_coa',
           detail: `Membuat Chart of Accounts baru: ${nomorAkun} - ${namaAkun}`,
         },

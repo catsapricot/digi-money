@@ -21,7 +21,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Verify project exists
     const project = await prisma.proyek.findUnique({
-      where: { id: proyekId },
+      where: { id: parseInt(proyekId, 10) },
     });
 
     if (!project) {
@@ -40,27 +40,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await prisma.$transaction(async (tx) => {
       // Check for existing budget
       const existingBudget = await tx.budget.findUnique({
-        where: { proyekId },
+        where: { proyekId: parseInt(proyekId, 10) },
       });
 
       if (existingBudget) {
         // Delete old budget (cascades to posAnggaran)
         await tx.budget.delete({
-          where: { proyekId },
+          where: { proyekId: parseInt(proyekId, 10) },
         });
       }
 
       // Create new budget
       const newBudget = await tx.budget.create({
         data: {
-          proyekId,
+          proyekId: parseInt(proyekId, 10),
           rabTotal,
           sisaBudget: rabTotal,
           totalPengeluaran: 0,
           totalReimbursement: 0,
           posAnggaran: {
             create: posAnggaran.map((pos) => ({
-              deskripsi: pos.deskripsi,
+              namaPos: pos.deskripsi,
               nominalAlokasi: pos.nominalAlokasi,
               nominalTerpakai: 0,
             })),
@@ -77,14 +77,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (userId) {
       await prisma.auditTrail.create({
         data: {
-          userId,
+          userId: parseInt(userId, 10),
           aksi: 'input_rab',
           detail: `Menginput RAB proyek ${project.nama} senilai Rp ${parseFloat(rabTotal).toLocaleString()}`,
         },
       });
     }
 
-    return NextResponse.json({ message: 'RAB budget initialized successfully', budget: result }, { status: 201 });
+    const responseBudget = {
+      ...result,
+      posAnggaran: result.posAnggaran.map((pos) => ({
+        ...pos,
+        deskripsi: pos.namaPos,
+      })),
+    };
+
+    return NextResponse.json({ message: 'RAB budget initialized successfully', budget: responseBudget }, { status: 201 });
   } catch (error: any) {
     console.error('Input budget error:', error);
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });

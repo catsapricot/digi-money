@@ -26,12 +26,21 @@ export async function POST(req: Request) {
       data: {
         nama,
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role,
-        proyekId: proyekId || null,
         divisi: divisi || null,
       },
     });
+
+    if (proyekId) {
+      await prisma.userProyek.create({
+        data: {
+          userId: user.id,
+          proyekId: parseInt(proyekId, 10),
+          role: role === 'Project Manager' ? 'Project Manager' : 'Anggota Lapangan',
+        },
+      });
+    }
 
     // Create an audit trail log
     await prisma.auditTrail.create({
@@ -43,7 +52,7 @@ export async function POST(req: Request) {
     });
 
     // Don't return password
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
     return NextResponse.json({ message: 'User registered successfully', user: userWithoutPassword }, { status: 201 });
   } catch (error: any) {

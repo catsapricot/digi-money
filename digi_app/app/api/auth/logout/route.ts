@@ -7,13 +7,13 @@ export async function POST(req: NextRequest) {
     if (userId) {
       // Create audit trail log for logout
       const user = await prisma.user.findUnique({
-        where: { id: userId },
+        where: { id: parseInt(userId, 10) },
         select: { nama: true },
       });
       if (user) {
         await prisma.auditTrail.create({
           data: {
-            userId,
+            userId: parseInt(userId, 10),
             aksi: 'logout',
             detail: `User ${user.nama} logout dari sistem.`,
           },

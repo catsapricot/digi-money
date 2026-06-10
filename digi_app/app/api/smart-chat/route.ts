@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         include: {
           user: { select: { nama: true } },
           proyek: { select: { nama: true } },
-          posAnggaran: { select: { deskripsi: true } },
+          posAnggaran: { select: { namaPos: true } },
         },
       });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         responseText = 'Belum ada pengeluaran/reimbursement yang disetujui di sistem saat ini.';
       } else {
         const nominal = Number(largestRb.nominal);
-        responseText = `Pengeluaran terbesar yang telah dicairkan di sistem adalah pengajuan dari **${largestRb.user.nama}** untuk proyek **${largestRb.proyek.nama}** (Pos Anggaran: ${largestRb.posAnggaran.deskripsi}) sebesar **Rp ${nominal.toLocaleString()}**.`;
+        responseText = `Pengeluaran terbesar yang telah dicairkan di sistem adalah pengajuan dari **${largestRb.user.nama}** untuk proyek **${largestRb.proyek.nama}** (Pos Anggaran: ${largestRb.posAnggaran.namaPos}) sebesar **Rp ${nominal.toLocaleString()}**.`;
       }
     }
     // 3. Pending approvals query

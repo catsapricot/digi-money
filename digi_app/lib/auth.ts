@@ -13,11 +13,11 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export interface JWTPayload {
-  id: string;
+  id: number;
   nama: string;
   email: string;
   role: string;
-  proyekId?: string | null;
+  proyekId?: number | null;
   divisi?: string | null;
 }
 

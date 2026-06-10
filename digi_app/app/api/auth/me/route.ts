@@ -10,9 +10,13 @@ export async function GET(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: parseInt(userId, 10) },
       include: {
-        proyek: true,
+        proyek: {
+          include: {
+            proyek: true,
+          },
+        },
       },
     });
 
@@ -20,9 +24,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    const firstUserProyek = user.proyek[0];
+    const userProyekDetails = firstUserProyek ? firstUserProyek.proyek : null;
+    const userProyekId = firstUserProyek ? firstUserProyek.proyekId : null;
 
-    return NextResponse.json({ user: userWithoutPassword });
+    const { passwordHash: _, proyek: __, ...userWithoutPassword } = user;
+    const responseUser = {
+      ...userWithoutPassword,
+      proyek: userProyekDetails,
+      proyekId: userProyekId,
+    };
+
+    return NextResponse.json({ user: responseUser });
   } catch (error: any) {
     console.error('Me endpoint error:', error);
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });

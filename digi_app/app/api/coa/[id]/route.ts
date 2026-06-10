@@ -24,9 +24,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // If changing nomorAkun, make sure it's not taken
-    if (nomorAkun && nomorAkun !== existing.nomorAkun) {
-      const duplicate = await prisma.chartOfAccounts.findUnique({
-        where: { nomorAkun },
+    if (nomorAkun && parseInt(nomorAkun, 10) !== existing.nomorAkun) {
+      const duplicate = await prisma.chartOfAccounts.findFirst({
+        where: { nomorAkun: parseInt(nomorAkun, 10) },
       });
       if (duplicate) {
         return NextResponse.json({ message: `Account number ${nomorAkun} is already in use` }, { status: 400 });
@@ -36,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const updated = await prisma.chartOfAccounts.update({
       where: { id },
       data: {
-        nomorAkun: nomorAkun || undefined,
+        nomorAkun: nomorAkun ? parseInt(nomorAkun, 10) : undefined,
         namaAkun: namaAkun || undefined,
         tipe: tipe || undefined,
         standar: standar || undefined,
@@ -47,7 +47,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (userId) {
       await prisma.auditTrail.create({
         data: {
-          userId,
+          userId: parseInt(userId, 10),
           aksi: 'update_coa',
           detail: `Mengubah Chart of Accounts: ${existing.nomorAkun} -> ${updated.nomorAkun} (${updated.namaAkun})`,
         },
@@ -89,7 +89,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (userId) {
       await prisma.auditTrail.create({
         data: {
-          userId,
+          userId: parseInt(userId, 10),
           aksi: 'delete_coa',
           detail: `Menghapus Chart of Accounts: ${existing.nomorAkun} - ${existing.namaAkun}`,
         },

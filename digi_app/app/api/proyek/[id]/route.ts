@@ -7,7 +7,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     const project = await prisma.proyek.findUnique({
-      where: { id },
+      where: { id: parseInt(id, 10) },
       include: {
         budget: {
           include: {
@@ -15,11 +15,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           },
         },
         users: {
-          select: {
-            id: true,
-            nama: true,
-            email: true,
-            role: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                nama: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
@@ -29,7 +33,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ message: 'Project not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ project });
+    const mappedUsers = project.users.map((up) => up.user);
+    const mappedBudget = project.budget ? {
+      ...project.budget,
+      posAnggaran: project.budget.posAnggaran.map((pos) => ({
+        ...pos,
+        deskripsi: pos.namaPos,
+      })),
+    } : null;
+
+    const responseProject = {
+      ...project,
+      users: mappedUsers,
+      budget: mappedBudget,
+    };
+
+    return NextResponse.json({ project: responseProject });
   } catch (error: any) {
     console.error('Fetch project detail error:', error);
     return NextResponse.json({ message: 'Internal server error', error: error.message }, { status: 500 });

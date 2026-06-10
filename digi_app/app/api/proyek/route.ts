@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (userId) {
       await prisma.auditTrail.create({
         data: {
-          userId,
+          userId: parseInt(userId, 10),
           aksi: 'create_proyek',
           detail: `Membuat proyek baru: ${nama}`,
         },

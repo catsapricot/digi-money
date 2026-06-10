@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     let projectFilter: any = {};
     if (proyekId) {
-      projectFilter.id = proyekId;
+      projectFilter.id = parseInt(proyekId, 10);
     }
 
     const projects = await prisma.proyek.findMany({
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       // Retrieve JurnalAkuntansi entries
       let journalFilter: any = {};
       if (proyekId) {
-        journalFilter.reimbursement = { proyekId };
+        journalFilter.reimbursement = { proyekId: parseInt(proyekId, 10) };
       }
 
       const entries = await prisma.jurnalAkuntansi.findMany({
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
             include: {
               user: { select: { nama: true } },
               proyek: { select: { nama: true } },
-              posAnggaran: { select: { deskripsi: true } },
+              posAnggaran: { select: { namaPos: true } },
             },
           },
           akunDebit: true,
@@ -81,9 +81,9 @@ export async function GET(req: NextRequest) {
         Keterangan: entry.keterangan || `Pencairan reimbursement ${entry.reimbursement.id}`,
         Proyek: entry.reimbursement.proyek.nama,
         Karyawan: entry.reimbursement.user.nama,
-        PosAnggaran: entry.reimbursement.posAnggaran.deskripsi,
-        'Akun Debit': `${entry.noAkunDebit} - ${entry.akunDebit.namaAkun}`,
-        'Akun Kredit': `${entry.noAkunKredit} - ${entry.akunKredit.namaAkun}`,
+        PosAnggaran: entry.reimbursement.posAnggaran.namaPos,
+        'Akun Debit': `${entry.akunDebit.nomorAkun} - ${entry.akunDebit.namaAkun}`,
+        'Akun Kredit': `${entry.akunKredit.nomorAkun} - ${entry.akunKredit.namaAkun}`,
         Nominal: Number(entry.nominal),
       }));
 
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
         const expensesBreakdown: any = {};
         if (p.budget) {
           p.budget.posAnggaran.forEach((pos) => {
-            expensesBreakdown[`Beban ${pos.deskripsi}`] = Number(pos.nominalTerpakai);
+            expensesBreakdown[`Beban ${pos.namaPos}`] = Number(pos.nominalTerpakai);
           });
         }
 
