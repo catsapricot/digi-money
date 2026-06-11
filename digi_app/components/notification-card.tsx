@@ -136,24 +136,23 @@ export default function NotificationCard({
     }
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "rejected":
-        return (
-          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </div>
-        );
-      default:
-        return (
-          <div className="w-8 h-8 rounded-full bg-[#e2f1eb] flex items-center justify-center text-[#117a5b] shrink-0">
-            <Check size={16} strokeWidth={3} />
-          </div>
-        );
+  const getIcon = (type: string, description: string) => {
+    const isRejected = type === "rejected" || description.toLowerCase().includes("ditolak");
+    if (isRejected) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+      );
     }
+    return (
+      <div className="w-8 h-8 rounded-full bg-[#e2f1eb] flex items-center justify-center text-[#117a5b] shrink-0">
+        <Check size={16} strokeWidth={3} />
+      </div>
+    );
   };
 
   const displayNotifications = currentNotifications.slice(0, limit);
@@ -191,7 +190,7 @@ export default function NotificationCard({
               !item.isRead ? "bg-[#f4f8fc]" : "bg-[#f5f4ef]/30"
             }`}
           >
-            {getIcon(item.type)}
+            {getIcon(item.type, item.description)}
 
             <div className="flex-1 min-w-0 flex flex-col gap-0.5">
               <div className="flex items-baseline justify-between gap-2">

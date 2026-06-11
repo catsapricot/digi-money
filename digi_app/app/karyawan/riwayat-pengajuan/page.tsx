@@ -123,10 +123,25 @@ function getApprovalSteps(raw: any): ApprovalStep[] {
 
   if (status === "REJECTED") {
     const pmDate = pmApproval ? formatApprovalDate(pmApproval.timestamp) : "";
+    const finDate = financeApproval ? formatApprovalDate(financeApproval.timestamp) : "";
+
+    const isPmRejected = pmApproval && pmApproval.status === "REJECTED";
+    const isFinanceRejected = financeApproval && financeApproval.status === "REJECTED";
+
     return [
       { label: "Pengajuan dikirim", sublabel: submittedLabel, status: "done" },
-      { label: "Validasi Project Manager", sublabel: `${pmApprover}${pmDate ? " • " + pmDate : ""}`, status: "rejected" },
-      { label: "Verifikasi Tim Keuangan", sublabel: "Menunggu • —", status: "waiting" },
+      { 
+        label: "Validasi Project Manager", 
+        sublabel: pmApproval ? `${pmApprover}${pmDate ? " • " + pmDate : ""}` : `${pmApprover} • Menunggu`, 
+        status: isPmRejected ? "rejected" : "done" 
+      },
+      { 
+        label: "Verifikasi Tim Keuangan", 
+        sublabel: financeApproval 
+          ? `${financeApprover}${finDate ? " • " + finDate : ""}` 
+          : (isPmRejected ? "Menunggu • —" : `${financeApprover} • Menunggu`), 
+        status: isFinanceRejected ? "rejected" : (isPmRejected ? "waiting" : "waiting") 
+      },
       { label: "Dicairkan", sublabel: "Jurnal otomatis • —", status: "waiting" },
     ];
   }

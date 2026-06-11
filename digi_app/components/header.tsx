@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Menu, LogOut, Check, ArrowRight, Loader2 } from "lucide-react";
+import { Bell, Menu, LogOut, Check, ArrowRight, Loader2, X } from "lucide-react";
 import Link from "next/link";
 
 export type UserRole = "Karyawan" | "Project Manager" | "Tim Keuangan" | "Direktur / Manajemen";
@@ -265,31 +265,57 @@ export default function Header({ onOpenSidebar, userRole = "Karyawan", hideNotif
 
                 <div className="flex-1 overflow-y-auto divide-y divide-stone-100 max-h-[350px]">
                   {notifications.length > 0 ? (
-                    notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          if (!item.dibaca) handleMarkOneRead(item.id);
-                        }}
-                        className={`flex gap-3.5 p-4 transition-all duration-200 cursor-pointer ${!item.dibaca ? "bg-[#f5fbf8] hover:bg-[#eaf5ef]" : "bg-transparent hover:bg-stone-50"
+                    notifications.map((item) => {
+                      const isRejected = item.tipe === "rejected" || item.pesan.toLowerCase().includes("ditolak");
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            if (!item.dibaca) handleMarkOneRead(item.id);
+                          }}
+                          className={`flex gap-3.5 p-4 transition-all duration-200 cursor-pointer ${
+                            !item.dibaca 
+                              ? (isRejected ? "bg-[#fff5f5] hover:bg-[#fee2e2]" : "bg-[#f5fbf8] hover:bg-[#eaf5ef]") 
+                              : "bg-transparent hover:bg-stone-50"
                           }`}
-                      >
-                        <div className="w-9 h-9 rounded-full bg-[#e2f1eb] text-[#117a5b] flex items-center justify-center shrink-0 shadow-sm border border-emerald-100">
-                          <Check size={16} strokeWidth={2.5} />
-                        </div>
+                        >
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-sm border ${
+                            isRejected 
+                              ? "bg-red-50 text-red-700 border-red-100" 
+                              : "bg-[#e2f1eb] text-[#117a5b] border-emerald-100"
+                          }`}>
+                            {isRejected ? (
+                              <X size={16} strokeWidth={2.5} />
+                            ) : (
+                              <Check size={16} strokeWidth={2.5} />
+                            )}
+                          </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[12px] font-bold text-stone-900 truncate">
-                              {item.tipe === "status_update"
-                                ? item.pesan.includes("disetujui")
-                                  ? item.pesan.includes("project manager")
-                                    ? "Reimbursement disetujui PM"
-                                    : "Reimbursement disetujui Keuangan"
-                                  : item.pesan.includes("dicairkan")
-                                    ? "Reimbursement Dicairkan"
-                                    : "Reimbursement Ditolak"
-                                : "Pemberitahuan Sistem"}
+                              {(() => {
+                                const msg = item.pesan.toLowerCase();
+                                if (msg.includes("disetujui oleh pm") || msg.includes("disetujui oleh project manager")) {
+                                  return "Reimbursement disetujui PM";
+                                }
+                                if (msg.includes("disetujui oleh keuangan") || msg.includes("disetujui oleh tim keuangan")) {
+                                  return "Reimbursement disetujui Keuangan";
+                                }
+                                if (msg.includes("ditolak oleh pm") || msg.includes("ditolak oleh project manager")) {
+                                  return "Reimbursement ditolak PM";
+                                }
+                                if (msg.includes("ditolak oleh keuangan") || msg.includes("ditolak oleh tim keuangan")) {
+                                  return "Reimbursement ditolak Keuangan";
+                                }
+                                if (msg.includes("dicairkan")) {
+                                  return "Reimbursement Dicairkan";
+                                }
+                                if (msg.includes("ditolak")) {
+                                  return "Reimbursement Ditolak";
+                                }
+                                return "Pemberitahuan Sistem";
+                              })()}
                             </p>
                             <span className="text-[10px] text-stone-400 shrink-0 font-medium">
                               {getRelativeTime(item.timestamp)}
@@ -306,7 +332,8 @@ export default function Header({ onOpenSidebar, userRole = "Karyawan", hideNotif
                           </div>
                         )}
                       </div>
-                    ))
+                    );
+                  })
                   ) : (
                     <div className="p-8 text-center text-stone-400 text-[12px] font-medium">
                       Tidak ada notifikasi baru.

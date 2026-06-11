@@ -211,7 +211,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           await tx.notification.create({
             data: {
               userId: reimbursement.userId,
-              tipe: 'status_update',
+              tipe: 'disbursed',
               pesan: `Pengajuan reimbursement Anda senilai Rp ${nominal.toLocaleString()} telah DICAIRKAN oleh Tim Keuangan.`,
             },
           });
@@ -300,7 +300,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           await tx.notification.create({
             data: {
               userId: reimbursement.userId,
-              tipe: 'status_update',
+              tipe: 'rejected',
               pesan: `Pengajuan reimbursement Anda senilai Rp ${nominal.toLocaleString()} ditolak oleh Tim Keuangan.`,
             },
           });
