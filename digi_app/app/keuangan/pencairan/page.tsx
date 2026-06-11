@@ -496,14 +496,24 @@ function PencairanContent() {
                         {/* Step 2 */}
                         <div className="relative flex items-start gap-3">
                           <div className={`absolute -left-[30px] rounded-full w-[20px] h-[20px] flex items-center justify-center z-10 border-[3px] border-white ring-1 ring-white/50 ${
-                            pmApproval ? "bg-[#008f5d]" : "bg-stone-200"
+                            pmApproval 
+                              ? (pmApproval.status === 'REJECTED' ? "bg-[#be123c]" : "bg-[#008f5d]") 
+                              : "bg-stone-200"
                           }`}>
                             {pmApproval ? (
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              pmApproval.status === 'REJECTED' ? (
+                                <svg className="w-2 h-2 text-white" viewBox="0 0 12 12" fill="none">
+                                  <path d="M2 2L10 10M10 2L2 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              ) : (
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              )
                             ) : null}
                           </div>
                           <div className="text-[12px] leading-tight mt-0.5">
-                            <p className={`font-medium ${pmApproval ? "text-stone-800" : "text-stone-500"}`}>Validasi Project Manager</p>
+                            <p className={`font-medium ${pmApproval ? "text-stone-800" : "text-stone-500"}`}>
+                              {pmApproval?.status === 'REJECTED' ? "Ditolak oleh Project Manager" : "Validasi Project Manager"}
+                            </p>
                             <p className="text-[10px] text-stone-400 mt-1">
                               {pmApproval ? `${pmApproval.approver?.nama} · ${new Date(pmApproval.timestamp).toLocaleDateString('id-ID')}` : 'Menunggu · -'}
                             </p>
@@ -514,16 +524,26 @@ function PencairanContent() {
                         <div className="relative flex items-start gap-3">
                           <div className={`absolute -left-[30px] rounded-full w-[20px] h-[20px] flex items-center justify-center z-10 border-[3px] border-white ring-1 ring-white/50 ${
                             selectedItem.status === 'APPROVED_BY_PM' ? 'bg-[#f59e0b]' :
-                            financeApproval ? 'bg-[#008f5d]' : 'bg-stone-200'
+                            financeApproval 
+                              ? (financeApproval.status === 'REJECTED' ? 'bg-[#be123c]' : 'bg-[#008f5d]') 
+                              : 'bg-stone-200'
                           }`}>
                             {financeApproval ? (
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              financeApproval.status === 'REJECTED' ? (
+                                <svg className="w-2 h-2 text-white" viewBox="0 0 12 12" fill="none">
+                                  <path d="M2 2L10 10M10 2L2 10" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                </svg>
+                              ) : (
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              )
                             ) : selectedItem.status === 'APPROVED_BY_PM' ? (
                               <span className="text-[10px] font-bold text-white">3</span>
                             ) : null}
                           </div>
                           <div className="text-[12px] leading-tight mt-0.5">
-                            <p className={`font-medium ${selectedItem.status === 'APPROVED_BY_PM' || financeApproval ? 'text-stone-800' : 'text-stone-500'}`}>Verifikasi Tim Keuangan</p>
+                            <p className={`font-medium ${selectedItem.status === 'APPROVED_BY_PM' || financeApproval ? 'text-stone-800' : 'text-stone-500'}`}>
+                              {financeApproval?.status === 'REJECTED' ? "Ditolak oleh Tim Keuangan" : "Verifikasi Tim Keuangan"}
+                            </p>
                             <p className="text-[10px] text-stone-400 mt-1">
                               {financeApproval ? `${financeApproval.approver?.nama} · ${new Date(financeApproval.timestamp).toLocaleDateString('id-ID')}` :
                                selectedItem.status === 'APPROVED_BY_PM' ? 'Menunggu · -' : 'Dilewati / Ditolak'}
