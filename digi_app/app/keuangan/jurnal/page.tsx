@@ -76,6 +76,7 @@ function JurnalAkuntansiContent() {
   const [draftEnd, setDraftEnd] = useState("2026-06-30");
   const [appliedStart, setAppliedStart] = useState("2026-05-01");
   const [appliedEnd, setAppliedEnd] = useState("2026-06-30");
+  const [selectedRangeOption, setSelectedRangeOption] = useState<string>("");
   const [reportData, setReportData] = useState<any[]>([]);
   const [neracaData, setNeracaData] = useState<any[]>([]);
   const [labaRugiData, setLabaRugiData] = useState<any[]>([]);
@@ -83,6 +84,40 @@ function JurnalAkuntansiContent() {
   const [isExporting, setIsExporting] = useState(false);
 
   const periodeRef = useRef<HTMLDivElement>(null);
+
+  const getLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleQuickRange = (option: string) => {
+    const end = new Date();
+    const start = new Date();
+    
+    if (option === "1 Minggu") {
+      start.setDate(end.getDate() - 7);
+    } else if (option === "1 Bulan") {
+      start.setMonth(end.getMonth() - 1);
+    } else if (option === "3 Bulan") {
+      start.setMonth(end.getMonth() - 3);
+    } else if (option === "6 Bulan") {
+      start.setMonth(end.getMonth() - 6);
+    } else if (option === "1 Tahun") {
+      start.setFullYear(end.getFullYear() - 1);
+    }
+
+    const startStr = getLocalDateString(start);
+    const endStr = getLocalDateString(end);
+
+    setDraftStart(startStr);
+    setDraftEnd(endStr);
+    setAppliedStart(startStr);
+    setAppliedEnd(endStr);
+    setSelectedRangeOption(option);
+    setShowPeriode(false);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -399,73 +434,111 @@ function JurnalAkuntansiContent() {
               </div>
 
               <div className="flex items-center gap-2 py-2 sm:py-0 overflow-x-auto">
-                {/* Label Periode */}
-                <div className="flex items-center gap-2 text-[12px] font-medium text-stone-600 border border-stone-200 bg-stone-50 px-3 py-1.5 rounded-lg shrink-0">
-                  <Calendar size={13} className="text-stone-400 shrink-0" />
-                  <span>{periodeLabel(appliedStart, appliedEnd)}</span>
-                </div>
-
-                {/* Tombol Filter + Dropdown Periode */}
-                <div ref={periodeRef} className="relative shrink-0">
+                {/* Wrapper unified Ref container */}
+                <div ref={periodeRef} className="relative flex items-center gap-2 shrink-0">
+                  {/* Label Periode */}
                   <button
                     onClick={() => setShowPeriode((v) => !v)}
-                    className={`flex items-center gap-1.5 text-[12px] font-medium border px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                      showPeriode
-                        ? "bg-stone-100 border-stone-300 text-stone-800"
-                        : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-                    }`}
+                    className="flex items-center gap-2 text-[12px] font-medium text-stone-600 border border-stone-200 bg-stone-50 px-3 py-1.5 rounded-lg shrink-0 hover:bg-stone-100 transition cursor-pointer"
                   >
-                    <Filter size={13} className="text-stone-400" />
-                    <span>Filter</span>
-                    <ChevronDown size={12} className={`text-stone-400 transition-transform ${showPeriode ? "rotate-180" : ""}`} />
+                    <Calendar size={13} className="text-stone-400 shrink-0" />
+                    <span>{periodeLabel(appliedStart, appliedEnd)}</span>
                   </button>
 
-                  {showPeriode && (
-                    <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-stone-200 rounded-xl shadow-lg p-4 w-72">
-                      <p className="text-[12px] font-semibold text-stone-700 mb-3">Pilih Rentang Periode</p>
+                  {/* Tombol Filter + Dropdown Periode */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowPeriode((v) => !v)}
+                      className={`flex items-center gap-1.5 text-[12px] font-medium border px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                        showPeriode
+                          ? "bg-stone-100 border-stone-300 text-stone-800"
+                          : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
+                      }`}
+                    >
+                      <Filter size={13} className="text-stone-400" />
+                      <span>Filter</span>
+                      <ChevronDown size={12} className={`text-stone-400 transition-transform ${showPeriode ? "rotate-180" : ""}`} />
+                    </button>
 
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-[11px] font-medium text-stone-400 mb-1 block">Dari</label>
-                          <input
-                            type="date"
-                            value={draftStart}
-                            onChange={(e) => setDraftStart(e.target.value)}
-                            className="w-full border border-stone-200 rounded-lg px-3 py-2 text-[12px] text-stone-700 bg-stone-50 focus:outline-none focus:border-stone-400 focus:bg-white transition"
-                          />
+                    {showPeriode && (
+                      <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-stone-200 rounded-xl shadow-lg p-4 w-72">
+                        <p className="text-[12px] font-semibold text-stone-700 mb-3">Pilih Rentang Periode</p>
+
+                        {/* Pilihan Cepat */}
+                        <div className="mb-4">
+                          <p className="text-[11px] font-medium text-stone-400 mb-2">Pilihan Cepat</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {["1 Minggu", "1 Bulan", "3 Bulan", "6 Bulan", "1 Tahun"].map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => handleQuickRange(opt)}
+                                className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
+                                  selectedRangeOption === opt
+                                    ? "bg-stone-900 text-white"
+                                    : "border border-stone-200 text-stone-600 hover:bg-stone-50 bg-white"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[11px] font-medium text-stone-400 mb-1 block">Sampai</label>
-                          <input
-                            type="date"
-                            value={draftEnd}
-                            min={draftStart}
-                            onChange={(e) => setDraftEnd(e.target.value)}
-                            className="w-full border border-stone-200 rounded-lg px-3 py-2 text-[12px] text-stone-700 bg-stone-50 focus:outline-none focus:border-stone-400 focus:bg-white transition"
-                          />
+
+                        <div className="h-px bg-stone-100 my-3" />
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-[11px] font-medium text-stone-400 mb-1 block">Dari</label>
+                            <input
+                              type="date"
+                              value={draftStart}
+                              onChange={(e) => {
+                                setDraftStart(e.target.value);
+                                setSelectedRangeOption("");
+                              }}
+                              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-[12px] text-stone-700 bg-stone-50 focus:outline-none focus:border-stone-400 focus:bg-white transition"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-stone-400 mb-1 block">Sampai</label>
+                            <input
+                              type="date"
+                              value={draftEnd}
+                              min={draftStart}
+                              onChange={(e) => {
+                                setDraftEnd(e.target.value);
+                                setSelectedRangeOption("");
+                              }}
+                              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-[12px] text-stone-700 bg-stone-50 focus:outline-none focus:border-stone-400 focus:bg-white transition"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
+                          <button
+                            onClick={() => {
+                              setDraftStart("");
+                              setDraftEnd("");
+                              setSelectedRangeOption("");
+                            }}
+                            className="text-[12px] font-medium text-stone-400 hover:text-stone-600 transition"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAppliedStart(draftStart);
+                              setAppliedEnd(draftEnd);
+                              setShowPeriode(false);
+                            }}
+                            className="text-[12px] font-semibold text-white bg-stone-900 hover:bg-stone-700 transition px-4 py-1.5 rounded-lg"
+                          >
+                            Terapkan
+                          </button>
                         </div>
                       </div>
-
-                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
-                        <button
-                          onClick={() => { setDraftStart(""); setDraftEnd(""); }}
-                          className="text-[12px] font-medium text-stone-400 hover:text-stone-600 transition"
-                        >
-                          Reset
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAppliedStart(draftStart);
-                            setAppliedEnd(draftEnd);
-                            setShowPeriode(false);
-                          }}
-                          className="text-[12px] font-semibold text-white bg-stone-900 hover:bg-stone-700 transition px-4 py-1.5 rounded-lg"
-                        >
-                          Terapkan
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 <button 

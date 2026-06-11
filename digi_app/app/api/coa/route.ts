@@ -25,10 +25,72 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { nomorAkun, namaAkun, tipe, standar } = body;
 
-    if (!nomorAkun || !namaAkun || !tipe || !standar) {
-      return NextResponse.json({ message: 'nomorAkun, namaAkun, tipe, and standar are required' }, { status: 400 });
+    // Check if bulk insert (array)
+    if (Array.isArray(body)) {
+      const createdCoas = [];
+      const errors = [];
+
+      for (const item of body) {
+        const { nomorAkun, namaAkun, tipe } = item;
+        const standar = item.standar || 'PSAK';
+
+        if (!nomorAkun || !namaAkun || !tipe) {
+          errors.push({ item, error: 'nomorAkun, namaAkun, and tipe are required' });
+          continue;
+        }
+
+        const numAkun = parseInt(nomorAkun, 10);
+        if (isNaN(numAkun)) {
+          errors.push({ item, error: 'nomorAkun must be a number' });
+          continue;
+        }
+
+        // Check duplicate
+        const existing = await prisma.chartOfAccounts.findFirst({
+          where: { nomorAkun: numAkun },
+        });
+
+        if (existing) {
+          errors.push({ item, error: `Account number ${nomorAkun} already exists` });
+          continue;
+        }
+
+        const newCoa = await prisma.chartOfAccounts.create({
+          data: {
+            id: `COA-${nomorAkun}`,
+            nomorAkun: numAkun,
+            namaAkun,
+            tipe,
+            standar,
+          },
+        });
+        createdCoas.push(newCoa);
+      }
+
+      if (userId && createdCoas.length > 0) {
+        await prisma.auditTrail.create({
+          data: {
+            userId: parseInt(userId, 10),
+            aksi: 'import_coa',
+            detail: `Mengimpor ${createdCoas.length} Chart of Accounts baru via CSV`,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        message: `Imported ${createdCoas.length} accounts successfully`,
+        createdCount: createdCoas.length,
+        errors,
+      }, { status: 201 });
+    }
+
+    // Single creation logic
+    const { nomorAkun, namaAkun, tipe } = body;
+    const standar = body.standar || 'PSAK';
+
+    if (!nomorAkun || !namaAkun || !tipe) {
+      return NextResponse.json({ message: 'nomorAkun, namaAkun, and tipe are required' }, { status: 400 });
     }
 
     // Check if account number already exists

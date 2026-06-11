@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Filter, Eye, X, Download, RefreshCw, CheckCircle2, Clock, XCircle, AlertTriangle, BookOpen } from "lucide-react";
+import { Filter, Eye, X, Download, RefreshCw, CheckCircle2, Clock, XCircle, AlertTriangle, BookOpen, ArrowUpDown } from "lucide-react";
 import Sidebar from '@/components/sidebar';
 import Header from '@/components/header';
 
@@ -9,6 +9,7 @@ type Submission = {
   id: string;
   dbId: string;
   date: string;
+  rawDate: string;
   merchant: string;
   project: string;
   pos: string;
@@ -348,10 +349,23 @@ function DetailPanel({ raw, displayId, onClose }: { raw: any; displayId: string;
 
       {/* Footer */}
       <div className="px-6 py-4 border-t border-stone-150 bg-white flex items-center justify-between gap-2">
-        <button className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl text-[12px] font-medium text-stone-700 hover:bg-stone-50 transition cursor-pointer">
-          <Download size={14} />
-          Download bukti
-        </button>
+        {raw.strukUrl ? (
+          <a
+            href={raw.strukUrl}
+            download={`bukti-${displayId}.png`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl text-[12px] font-medium text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+          >
+            <Download size={14} />
+            Download bukti
+          </a>
+        ) : (
+          <button className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl text-[12px] font-medium text-stone-700 hover:bg-stone-50 transition opacity-50 cursor-not-allowed" disabled>
+            <Download size={14} />
+            Download bukti
+          </button>
+        )}
         <div className="flex items-center gap-2">
           {status === "REJECTED" && (
             <button className="flex items-center gap-2 px-4 py-2 bg-[#1a7a5e] hover:bg-[#15644c] text-white rounded-xl text-[12px] font-semibold transition cursor-pointer">
@@ -389,6 +403,12 @@ export default function RiwayatPengajuanPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
+
+  const [filterProject, setFilterProject] = useState("Semua");
+  const [filterPos, setFilterPos] = useState("Semua");
+  const [searchMerchant, setSearchMerchant] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
 
 // Jika menggunakan database nyata ini merupakan kode yang menghubungkan dengan database  
@@ -538,28 +558,53 @@ export default function RiwayatPengajuanPage() {
     ];
     // --- AKHIR DATA DUMMY ---
 
-    const mapped = DUMMY_REIMBURSEMENTS.map((r: any, i: number) => ({
+    const mapped: Submission[] = DUMMY_REIMBURSEMENTS.map((r: any, i: number) => ({
       id: makeDisplayId(r.id, i),
       dbId: r.id,
       date: r.ocrData?.tanggal ? formatTanggal(r.ocrData.tanggal) : 'N/A',
+      rawDate: r.ocrData?.tanggal || r.createdAt || '',
       merchant: r.ocrData?.merchant || 'N/A',
       project: r.proyek?.nama || 'N/A',
       pos: r.posAnggaran?.deskripsi || 'N/A',
       amount: `Rp ${Number(r.nominal).toLocaleString('id-ID')}`,
-      status: r.status === 'SUBMITTED' ? 'Menunggu PM' :
+      status: (r.status === 'SUBMITTED' ? 'Menunggu PM' :
               r.status === 'APPROVED_BY_PM' ? 'Verifikasi Keuangan' :
-              r.status === 'APPROVED' ? 'Dicairkan' : 'Ditolak'
+              r.status === 'APPROVED' ? 'Dicairkan' : 'Ditolak') as Submission["status"]
     }));
     setRawReimbursements(DUMMY_REIMBURSEMENTS);
     setSubmissions(mapped);
     setIsLoading(false);
   }, []);
 
-  const filteredData = submissions.filter((item) => {
-    if (activeTab === "Semua") return true;
-    if (activeTab === "Menunggu Keuangan") return item.status === "Verifikasi Keuangan";
-    return item.status === activeTab;
-  });
+  // Extract unique projects and pos categories dynamically
+  const uniqueProjects = Array.from(new Set(submissions.map((s) => s.project))).filter(Boolean);
+  const uniquePos = Array.from(new Set(submissions.map((s) => s.pos))).filter(Boolean);
+
+  const filteredData = submissions
+    .filter((item) => {
+      // 1. Tab filter
+      if (activeTab !== "Semua") {
+        if (activeTab === "Menunggu Keuangan" && item.status !== "Verifikasi Keuangan") return false;
+        if (activeTab !== "Menunggu Keuangan" && item.status !== activeTab) return false;
+      }
+      // 2. Project filter
+      if (filterProject !== "Semua" && item.project !== filterProject) return false;
+      // 3. Pos filter
+      if (filterPos !== "Semua" && item.pos !== filterPos) return false;
+      // 4. Merchant search filter
+      if (searchMerchant.trim() !== "") {
+        const query = searchMerchant.toLowerCase();
+        if (!item.merchant.toLowerCase().includes(query)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.rawDate).getTime();
+      const dateB = new Date(b.rawDate).getTime();
+      if (isNaN(dateA)) return 1;
+      if (isNaN(dateB)) return -1;
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
 
   const handleOpenDetail = (dbId: string, displayId: string) => {
     const raw = rawReimbursements.find(r => r.id === dbId);
@@ -611,10 +656,99 @@ export default function RiwayatPengajuanPage() {
               ))}
             </div>
 
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm text-[13px] font-medium text-stone-700 hover:bg-stone-50 transition cursor-pointer">
-              <Filter size={14} className="text-stone-500" /> Filter
-            </button>
+            <div className="flex items-center gap-2.5">
+              {/* Sort Button */}
+              <button
+                onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-full shadow-sm text-[13px] font-medium text-stone-700 hover:bg-stone-50 transition cursor-pointer"
+              >
+                <ArrowUpDown size={14} className="text-stone-500" />
+                Urutan: {sortOrder === "desc" ? "Terbaru" : "Terlama"}
+              </button>
+
+              {/* Filter Toggle Button */}
+              <button
+                onClick={() => setShowFilterPanel(prev => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-full shadow-sm text-[13px] font-medium transition cursor-pointer ${
+                  showFilterPanel 
+                    ? "bg-stone-900 border-stone-900 text-white hover:bg-stone-850" 
+                    : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                }`}
+              >
+                <Filter size={14} className={showFilterPanel ? "text-white" : "text-stone-500"} /> Filter
+                {(filterProject !== "Semua" || filterPos !== "Semua" || searchMerchant !== "") && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Filter Panel */}
+          {showFilterPanel && (
+            <div className="bg-white border border-stone-200 rounded-2xl p-5 mb-6 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end animate-in fade-in slide-in-from-top-3 duration-250">
+              {/* Filter Project */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wide">Filter Proyek</label>
+                <select
+                  value={filterProject}
+                  onChange={(e) => setFilterProject(e.target.value)}
+                  className="w-full bg-[#fcfbf9] border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all"
+                >
+                  <option value="Semua">Semua Proyek</option>
+                  {uniqueProjects.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Filter Pos */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wide">Filter Pos Anggaran</label>
+                <select
+                  value={filterPos}
+                  onChange={(e) => setFilterPos(e.target.value)}
+                  className="w-full bg-[#fcfbf9] border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all"
+                >
+                  <option value="Semua">Semua Pos</option>
+                  {uniquePos.map((pos) => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Search Merchant */}
+              <div className="space-y-1.5 text-left">
+                <label className="text-[11px] font-bold text-stone-400 uppercase tracking-wide">Cari Merchant</label>
+                <input
+                  type="text"
+                  placeholder="Nama merchant..."
+                  value={searchMerchant}
+                  onChange={(e) => setSearchMerchant(e.target.value)}
+                  className="w-full bg-[#fcfbf9] border border-stone-200 rounded-xl px-3 py-2 text-xs font-semibold text-stone-700 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/20 focus:border-[#2d6a4f] transition-all"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setFilterProject("Semua");
+                    setFilterPos("Semua");
+                    setSearchMerchant("");
+                  }}
+                  className="flex-1 py-2 bg-stone-100 hover:bg-stone-250 text-stone-600 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setShowFilterPanel(false)}
+                  className="px-3.5 py-2 border border-stone-200 hover:bg-[#eae8e0] text-stone-500 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white border border-stone-200 rounded-2xl overflow-x-auto shadow-sm">
             <table className="w-full text-left border-collapse min-w-[900px]">

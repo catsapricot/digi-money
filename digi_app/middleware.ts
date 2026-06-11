@@ -132,10 +132,10 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/karyawan', req.url));
     }
     if (role === 'Project Manager') {
-      return NextResponse.redirect(new URL('/pm/budget', req.url));
+      return NextResponse.redirect(new URL('/pm', req.url));
     }
     if (role === 'Tim Keuangan') {
-      return NextResponse.redirect(new URL('/keuangan/chart-of-account', req.url));
+      return NextResponse.redirect(new URL('/keuangan', req.url));
     }
   }
 
@@ -160,7 +160,7 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  if (pathname.startsWith('/api/proyek/') && pathname.endsWith('/budget') && role !== 'Project Manager' && role !== 'Tim Keuangan') {
+  if (pathname.startsWith('/api/proyek/') && (pathname.endsWith('/budget') || pathname.endsWith('/pos')) && role !== 'Project Manager' && role !== 'Tim Keuangan') {
     return new NextResponse(
       JSON.stringify({ message: 'Forbidden: Only Project Manager or Tim Keuangan can modify budget' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -168,7 +168,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Valid session, store parsed payload headers for upstream API handlers
-// Valid session, store parsed payload headers for upstream API handlers
+  // Valid session, store parsed payload headers for upstream API handlers
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-user-id', String(payload.id));
   requestHeaders.set('x-user-email', String(payload.email));

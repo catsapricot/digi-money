@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, ArrowRight, FileText, Loader2 } from "lucide-react";
 import Sidebar from "@/components/sidebar";
 import Header from "@/components/header";
+import Link from "next/link";
 
 // Tipe Data untuk State Frontend
 type DashboardData = {
@@ -116,10 +117,10 @@ export default function BerandaKaryawanPage() {
               </p>
             </div>
 
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-[#2d6a4f] hover:bg-[#245c43] text-white text-[13px] font-semibold rounded-full shadow-sm transition-colors duration-200">
+            <Link href="/karyawan/reimbursement" className="flex items-center gap-2 px-5 py-2.5 bg-[#2d6a4f] hover:bg-[#245c43] text-white text-[13px] font-semibold rounded-full shadow-sm transition-colors duration-200">
               <Plus size={15} />
               Ajukan Reimbursement
-            </button>
+            </Link>
           </div>
 
           {loading ? (
@@ -185,9 +186,9 @@ export default function BerandaKaryawanPage() {
                 {/* Header tabel */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
                   <h2 className="text-[15px] font-bold text-stone-900">Pengajuan Terakhir</h2>
-                  <button className="flex items-center gap-1.5 text-[13px] font-medium text-[#2d6a4f] hover:text-[#245c43] transition-colors">
+                  <Link href="/karyawan/riwayat-pengajuan" className="flex items-center gap-1.5 text-[13px] font-medium text-[#2d6a4f] hover:text-[#245c43] transition-colors">
                     Lihat semua <ArrowRight size={14} />
-                  </button>
+                  </Link>
                 </div>
 
                 {/* List item pengajuan */}

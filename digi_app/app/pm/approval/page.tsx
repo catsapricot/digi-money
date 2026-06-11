@@ -505,6 +505,7 @@ export default function AntrianApprovalPage() {
                     {selected.strukUrl ? (
                       <a 
                         href={selected.strukUrl} 
+                        download={`bukti-${selected.id}.png`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 transition cursor-pointer"
@@ -512,7 +513,7 @@ export default function AntrianApprovalPage() {
                         <Download size={14} /> Download bukti
                       </a>
                     ) : (
-                      <button className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 transition">
+                      <button className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-full text-[13px] font-medium text-stone-600 hover:bg-stone-50 transition opacity-50 cursor-not-allowed" disabled>
                         <Download size={14} /> Download bukti
                       </button>
                     )}

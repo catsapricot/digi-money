@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, LayoutDashboard, Plus, History, FileCheck, Wallet, BookOpen, BarChart3, Settings } from "lucide-react";
@@ -32,9 +32,8 @@ const ROLE_MENUS: Record<UserRole, MenuItem[]> = {
   ],
   "Project Manager": [
     { name: "Beranda", href: "/pm", icon: LayoutDashboard, hasBadge: false },
-    { name: "Antrian Approval", href: "/pm/approval", icon: FileCheck, hasBadge: true, badgeCount: 2 },
+    { name: "Antrian Approval", href: "/pm/approval", icon: FileCheck, hasBadge: true, badgeCount: 0 },
     { name: "Budget Proyek", href: "/pm/budget", icon: Wallet, hasBadge: false },
-    { name: "Service Score", href: "/pm/service-score", icon: BarChart3, hasBadge: false },
   ],
   "Tim Keuangan": [
     { name: "Beranda", href: "/keuangan", icon: LayoutDashboard, hasBadge: false },
@@ -67,6 +66,21 @@ export default function Sidebar({ isSidebarOpen, onClose, userRole }: SidebarPro
   const pathname = usePathname();
   const menuItems = ROLE_MENUS[userRole] || [];
   const styles = ROLE_STYLES[userRole];
+
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (userRole === "Project Manager") {
+      fetch("/api/dashboard")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.dashboard && typeof data.dashboard.pendingApprovalsCount === "number") {
+            setPendingCount(data.dashboard.pendingApprovalsCount);
+          }
+        })
+        .catch((err) => console.error("Error fetching approvals count for sidebar:", err));
+    }
+  }, [userRole]);
 
   const getLinkClass = (href: string) => {
     const isActive = pathname === href;
@@ -120,6 +134,20 @@ export default function Sidebar({ isSidebarOpen, onClose, userRole }: SidebarPro
         <nav className="px-4 py-4 space-y-1 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
+
+            // Resolve dynamic badge display
+            let displayBadge = item.hasBadge;
+            let displayCount = item.badgeCount;
+
+            if (userRole === "Project Manager" && item.name === "Antrian Approval") {
+              if (pendingCount !== null) {
+                displayCount = pendingCount;
+                displayBadge = pendingCount > 0;
+              } else {
+                displayBadge = false; // hide until loaded
+              }
+            }
+
             return (
               <Link
                 key={item.href}
@@ -129,9 +157,9 @@ export default function Sidebar({ isSidebarOpen, onClose, userRole }: SidebarPro
               >
                 <Icon size={18} />
                 <span>{item.name}</span>
-                {item.hasBadge && item.badgeCount && (
+                {displayBadge && displayCount !== undefined && displayCount > 0 && (
                   <span className="ml-auto bg-green-900 text-white font-bold text-xs px-2 py-0.5 rounded-full">
-                    {item.badgeCount}
+                    {displayCount}
                   </span>
                 )}
               </Link>

@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Camera, 
-  BookOpen, 
-  TrendingUp, 
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Camera,
+  BookOpen,
+  TrendingUp,
   Loader2
 } from 'lucide-react';
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
       }
 
       setSuccessMsg('Login berhasil! Mengalihkan ke dashboard...');
-      
+
       // Clear values
       setLoginEmail('');
       setLoginPassword('');
@@ -58,7 +58,7 @@ export default function LoginPage() {
         if (role === 'Karyawan') {
           router.push('/karyawan');
         } else if (role === 'Project Manager') {
-          router.push('/pm/budget');
+          router.push('/pm');
         } else if (role === 'Tim Keuangan') {
           router.push('/keuangan');
         } else {
@@ -76,7 +76,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex text-stone-800 font-sans bg-[#f8f6f1]">
-      
+
       {/* SISI KIRI (DARK GREEN SECTION) - Hidden on Mobile */}
       <div className="hidden lg:flex lg:w-5/12 bg-[#003d29] text-white flex-col justify-between p-12 relative overflow-hidden shrink-0 shadow-2xl">
         {/* Glow decoration */}
@@ -158,7 +158,7 @@ export default function LoginPage() {
       {/* SISI KANAN (CREAM FORM SECTION) */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12">
         <div className="w-full max-w-[440px] space-y-8">
-          
+
           {/* Brand Header for Mobile View */}
           <div className="flex items-center gap-3 lg:hidden mb-4">
             <div className="w-9 h-9 border border-stone-300 relative flex items-center justify-center shrink-0 bg-stone-200/40 rounded-xl">

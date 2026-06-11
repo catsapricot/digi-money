@@ -173,8 +173,8 @@ export async function GET(req: NextRequest) {
 
       const jurnalCountThisMonth = monthReimbursementIds.length > 0
         ? await prisma.jurnalAkuntansi.count({
-            where: { reimbursementId: { in: monthReimbursementIds } },
-          })
+          where: { reimbursementId: { in: monthReimbursementIds } },
+        })
         : 0;
 
       // ── Total Debit = Kredit (balance check) ─────────────────────
